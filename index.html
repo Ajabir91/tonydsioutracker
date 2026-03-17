@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tony D's IOU Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0a0f0d;--surface:#111a15;--surface2:#172110;--surface3:#1e2e18;
+    --border:#2a3d22;--border2:#3a5530;--gold:#c9a84c;--gold2:#e8c96a;
+    --gold-dim:#8a6e2a;--green:#4caf71;--green-dim:#2d6b44;
+    --red:#e05252;--red-dim:#7a2d2d;--text:#e8edd6;--text2:#a8b89a;--text3:#6a7d5e;
+    --shadow:0 4px 24px rgba(0,0,0,.5);--shadow-gold:0 0 20px rgba(201,168,76,.15);
+  }
+  .light-mode {
+    --bg:#f0f4e8;--surface:#fff;--surface2:#f5f8ef;--surface3:#eaf0de;
+    --border:#c8d8b0;--border2:#a8c090;--gold:#8a6e2a;--gold2:#6a4e1a;
+    --gold-dim:#c9a84c;--green:#2a7a4a;--green-dim:#4caf71;
+    --red:#c03030;--red-dim:#f08080;--text:#1a2a10;--text2:#3a5530;--text3:#6a8060;
+    --shadow:0 4px 24px rgba(0,0,0,.12);--shadow-gold:0 0 20px rgba(138,110,42,.1);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'Outfit',sans-serif;min-height:100vh;transition:background .3s,color .3s;}
+
+  /* ── LOGIN ── */
+  #login-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:radial-gradient(ellipse at 50% 0%,#1e3a1a 0%,var(--bg) 60%);}
+  .login-card{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:48px 40px;width:100%;max-width:400px;box-shadow:var(--shadow),var(--shadow-gold);}
+  .login-logo{text-align:center;margin-bottom:32px;}
+  .login-logo .title{font-family:'DM Serif Display',serif;font-size:1.9rem;color:var(--gold2);line-height:1.2;}
+  .login-logo .subtitle{font-size:.8rem;color:var(--text3);letter-spacing:.15em;text-transform:uppercase;margin-top:6px;}
+  .divider-gold{width:60px;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:16px auto;}
+  .form-group{margin-bottom:18px;}
+  .form-group label{display:block;font-size:.75rem;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;}
+  .form-group input,.form-group select{width:100%;padding:11px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Outfit',sans-serif;font-size:.95rem;transition:border-color .2s,box-shadow .2s;}
+  .form-group input:focus,.form-group select:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,.12);}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-family:'Outfit',sans-serif;font-size:.9rem;font-weight:600;transition:all .18s;}
+  .btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#0a0f0d;width:100%;padding:13px;font-size:1rem;}
+  .btn-gold:hover{filter:brightness(1.1);transform:translateY(-1px);}
+  .btn-green{background:var(--green);color:#fff;}.btn-green:hover{filter:brightness(1.1);}
+  .btn-red{background:var(--red-dim);color:var(--text);}.btn-red:hover{background:var(--red);color:#fff;}
+  .btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border);}.btn-ghost:hover{border-color:var(--gold);color:var(--gold);}
+  .btn-sm{padding:6px 12px;font-size:.78rem;border-radius:6px;}
+  .error-msg{background:rgba(224,82,82,.15);border:1px solid var(--red-dim);color:var(--red);border-radius:8px;padding:10px 14px;font-size:.85rem;margin-bottom:16px;display:none;}
+
+  /* ── APP ── */
+  #app{display:none;}
+  .topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100;}
+  .topbar-title{font-family:'DM Serif Display',serif;font-size:1.3rem;color:var(--gold2);}
+  .topbar-right{display:flex;align-items:center;gap:12px;}
+  .user-badge{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:24px;padding:5px 14px 5px 8px;font-size:.82rem;color:var(--text2);}
+  .user-avatar{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--green));display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;color:#0a0f0d;}
+  .theme-toggle{background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:1rem;transition:all .2s;}
+  .theme-toggle:hover{border-color:var(--gold);color:var(--gold);}
+  .nav-tabs{background:var(--surface);border-bottom:1px solid var(--border);display:flex;overflow-x:auto;padding:0 24px;scrollbar-width:none;}
+  .nav-tabs::-webkit-scrollbar{display:none;}
+  .nav-tab{padding:14px 18px;cursor:pointer;font-size:.85rem;font-weight:500;color:var(--text3);border-bottom:2px solid transparent;white-space:nowrap;transition:all .2s;}
+  .nav-tab:hover{color:var(--text2);}
+  .nav-tab.active{color:var(--gold2);border-bottom-color:var(--gold);}
+
+  /* ── LAYOUT ── */
+  .main{padding:24px;max-width:1200px;margin:0 auto;}
+  .page{display:none;}.page.active{display:block;}
+  .cards-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:16px;margin-bottom:24px;}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px;position:relative;overflow:hidden;transition:border-color .2s,box-shadow .2s;}
+  .stat-card:hover{border-color:var(--border2);box-shadow:var(--shadow-gold);}
+  .stat-card.featured{border-color:var(--gold-dim);background:linear-gradient(135deg,var(--surface) 0%,rgba(201,168,76,.07) 100%);}
+  .stat-card .label{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);margin-bottom:8px;}
+  .stat-card .value{font-family:'DM Mono',monospace;font-size:1.9rem;font-weight:500;color:var(--gold2);line-height:1;}
+  .stat-card.featured .value{font-size:2.4rem;}
+  .stat-card .sub{font-size:.78rem;color:var(--text3);margin-top:6px;}
+  .stat-card .corner-icon{position:absolute;right:16px;top:16px;font-size:1.5rem;opacity:.2;}
+  .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:12px;flex-wrap:wrap;}
+  .section-title{font-family:'DM Serif Display',serif;font-size:1.2rem;color:var(--text);}
+  .section-actions{display:flex;gap:8px;flex-wrap:wrap;}
+
+  /* ── FORM ── */
+  .add-form-card{background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:22px;margin-bottom:24px;}
+  .form-row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;}
+  .form-row .form-group{flex:1;min-width:140px;margin-bottom:0;}
+
+  /* ── NAME AUTOCOMPLETE ── */
+  .name-input-wrap{position:relative;}
+  .name-suggestions{display:none;position:absolute;top:calc(100% + 3px);left:0;right:0;z-index:300;
+    background:var(--surface);border:1px solid var(--border2);border-radius:8px;
+    box-shadow:var(--shadow);max-height:210px;overflow-y:auto;}
+  .sug-item{padding:10px 14px;cursor:pointer;font-size:.9rem;color:var(--text);
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+    border-bottom:1px solid var(--border);transition:background .12s;}
+  .sug-item:last-child{border-bottom:none;}
+  .sug-item:hover,.sug-item.hi{background:var(--surface3);}
+  .sug-name{font-weight:500;}
+  .new-badge{font-size:.7rem;padding:2px 7px;border-radius:20px;background:rgba(201,168,76,.18);color:var(--gold);font-weight:700;white-space:nowrap;}
+
+  /* ── TABLE ── */
+  .table-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+  .table-toolbar{padding:14px 18px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--border);}
+  .search-input{flex:1;min-width:160px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:8px 12px;font-family:'Outfit',sans-serif;font-size:.88rem;}
+  .search-input:focus{outline:none;border-color:var(--gold);}
+  .table-wrap{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;}
+  thead tr{border-bottom:1px solid var(--border2);}
+  th{padding:12px 16px;text-align:left;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);white-space:nowrap;font-weight:600;}
+  tbody tr{border-bottom:1px solid var(--border);transition:background .15s;}
+  tbody tr:last-child{border-bottom:none;}
+  tbody tr:hover{background:var(--surface2);}
+  td{padding:12px 16px;font-size:.88rem;color:var(--text2);vertical-align:middle;}
+  td.name-cell{color:var(--text);font-weight:500;}
+  td.amount-cell{font-family:'DM Mono',monospace;color:var(--gold2);font-size:.92rem;}
+  td.actions-cell{white-space:nowrap;}
+  .empty-state{text-align:center;padding:48px 20px;color:var(--text3);font-size:.9rem;}
+  .empty-state .icon{font-size:2.5rem;margin-bottom:12px;}
+
+  /* ── PAID/UNPAID ── */
+  .badge-paid{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;background:rgba(76,175,113,.18);color:var(--green);border:1px solid var(--green-dim);white-space:nowrap;}
+  .badge-unpaid{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;background:rgba(224,82,82,.14);color:var(--red);border:1px solid var(--red-dim);white-space:nowrap;}
+  .paid-toggle-btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;background:none;border:2px solid;cursor:pointer;font-size:.75rem;font-weight:700;padding:4px 10px;border-radius:20px;transition:all .18s;line-height:1;font-family:'Outfit',sans-serif;letter-spacing:.04em;white-space:nowrap;}
+  .paid-toggle-btn.toggle-unpaid{border-color:var(--red-dim);color:var(--red);background:rgba(224,82,82,.1);}
+  .paid-toggle-btn.toggle-unpaid:hover{background:rgba(224,82,82,.25);border-color:var(--red);transform:translateY(-1px);}
+  .paid-toggle-btn.toggle-paid{border-color:var(--green-dim);color:var(--green);background:rgba(76,175,113,.1);}
+  .paid-toggle-btn.toggle-paid:hover{background:rgba(76,175,113,.25);border-color:var(--green);transform:translateY(-1px);}
+  .paid-timestamp{font-size:.7rem;color:var(--green);margin-top:2px;font-family:'DM Mono',monospace;}
+
+  /* ── DAILY GROUPS ── */
+  .day-group{background:var(--surface);border:1px solid var(--border);border-radius:14px;margin-bottom:20px;overflow:hidden;}
+  .day-group-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);background:var(--surface2);cursor:pointer;user-select:none;flex-wrap:wrap;gap:10px;}
+  .day-group-header:hover{background:var(--surface3);}
+  .day-group-date{font-family:'DM Serif Display',serif;font-size:1.05rem;color:var(--text);}
+  .day-group-meta{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  .day-group-total{font-family:'DM Mono',monospace;font-size:1.1rem;color:var(--gold2);}
+  .day-group-status-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .day-toggle-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:.78rem;font-weight:700;cursor:pointer;border:none;transition:all .18s;font-family:'Outfit',sans-serif;}
+  .day-toggle-paid{background:rgba(76,175,113,.18);color:var(--green);border:1px solid var(--green-dim);}.day-toggle-paid:hover{background:rgba(76,175,113,.32);}
+  .day-toggle-unpaid{background:rgba(224,82,82,.14);color:var(--red);border:1px solid var(--red-dim);}.day-toggle-unpaid:hover{background:rgba(224,82,82,.28);}
+  .collapse-icon{font-size:.85rem;color:var(--text3);transition:transform .2s;}
+  .day-group.collapsed .collapse-icon{transform:rotate(-90deg);}
+  .day-group.collapsed .day-group-body{display:none;}
+
+  /* ── PEOPLE ── */
+  .people-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;}
+  .person-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;transition:border-color .2s;}
+  .person-card:hover{border-color:var(--border2);}
+  .person-name{font-weight:500;font-size:.92rem;}
+  .person-total{font-family:'DM Mono',monospace;font-size:.82rem;color:var(--gold);margin-top:2px;}
+
+  /* ── MODAL ── */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:1000;padding:16px;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:32px;width:100%;max-width:460px;box-shadow:var(--shadow);animation:slideUp .2s ease;}
+  @keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+  .modal-title{font-family:'DM Serif Display',serif;font-size:1.3rem;margin-bottom:20px;color:var(--text);}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:24px;flex-wrap:wrap;}
+
+  /* ── TOAST ── */
+  .toast-container{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:8px;z-index:2000;}
+  .toast{background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:12px 18px;font-size:.85rem;color:var(--text);box-shadow:var(--shadow);animation:toastIn .2s ease;max-width:300px;}
+  .toast.success{border-left:3px solid var(--green);}
+  .toast.error{border-left:3px solid var(--red);}
+  .toast.info{border-left:3px solid var(--gold);}
+  @keyframes toastIn{from{transform:translateX(20px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+  .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.7rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;}
+  .badge-admin{background:rgba(201,168,76,.2);color:var(--gold);}
+  .badge-user{background:rgba(76,175,113,.15);color:var(--green);}
+  .users-table-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+
+  @media(max-width:600px){
+    .topbar-title{font-size:1rem;}.main{padding:16px;}
+    .cards-row{grid-template-columns:1fr 1fr;}.stat-card.featured .value{font-size:1.8rem;}
+    .modal{padding:24px 18px;}th,td{padding:10px 12px;}.login-card{padding:32px 22px;}
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="title">Tony D's<br>IOU Tracker</div>
+      <div class="divider-gold"></div>
+      <div class="subtitle">Nightly Balance Ledger</div>
+    </div>
+    <div class="error-msg" id="login-error">Invalid username or password.</div>
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" id="login-user" placeholder="Enter username" autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="login-pass" placeholder="Enter password" autocomplete="current-password">
+    </div>
+    <button class="btn btn-gold" id="login-btn">Sign In</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-title">Tony D's IOU Tracker</div>
+    <div class="topbar-right">
+      <button class="theme-toggle" id="theme-btn">☀︎</button>
+      <div class="user-badge">
+        <div class="user-avatar" id="topbar-avatar">?</div>
+        <span id="topbar-username">User</span>
+      </div>
+      <button class="btn btn-ghost btn-sm" id="logout-btn">Logout</button>
+    </div>
+  </div>
+
+  <div class="nav-tabs">
+    <div class="nav-tab active" data-tab="dashboard">📊 Dashboard</div>
+    <div class="nav-tab" data-tab="add-iou">➕ Add IOU</div>
+    <div class="nav-tab" data-tab="history">📋 History</div>
+    <div class="nav-tab" data-tab="people">👥 People</div>
+    <div class="nav-tab" data-tab="daily">📅 Daily Totals</div>
+    <div class="nav-tab" data-tab="users" id="tab-users" style="display:none">⚙️ Users</div>
+    <div class="nav-tab" data-tab="sync">🔄 Data</div>
+  </div>
+
+  <div class="main">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="cards-row">
+        <div class="stat-card featured"><div class="corner-icon">💰</div>
+          <div class="label">Total IOU Today</div><div class="value" id="stat-today">$0.00</div>
+          <div class="sub" id="stat-today-date">—</div></div>
+        <div class="stat-card"><div class="corner-icon">✅</div>
+          <div class="label">Paid Today</div><div class="value" id="stat-paid-today" style="font-size:1.9rem;color:var(--green)">$0.00</div>
+          <div class="sub">collected</div></div>
+        <div class="stat-card"><div class="corner-icon">⏳</div>
+          <div class="label">Unpaid Today</div><div class="value" id="stat-unpaid-today" style="font-size:1.9rem;color:var(--red)">$0.00</div>
+          <div class="sub">outstanding</div></div>
+        <div class="stat-card"><div class="corner-icon">📆</div>
+          <div class="label">Entries Today</div><div class="value" id="stat-entries-today" style="font-size:1.9rem">0</div>
+          <div class="sub">transactions</div></div>
+        <div class="stat-card"><div class="corner-icon">👤</div>
+          <div class="label">People Tracked</div><div class="value" id="stat-people" style="font-size:1.9rem">0</div>
+          <div class="sub">unique names</div></div>
+        <div class="stat-card"><div class="corner-icon">🧾</div>
+          <div class="label">All-Time Total</div><div class="value" id="stat-alltime">$0.00</div>
+          <div class="sub">cumulative</div></div>
+      </div>
+      <div class="section-header">
+        <div class="section-title">Tonight's IOUs</div>
+        <button class="btn btn-gold btn-sm" id="dash-add-btn">+ Add IOU</button>
+      </div>
+      <div class="table-card"><div class="table-wrap">
+        <table>
+          <thead><tr><th>Name</th><th>Amount</th><th>Time</th><th>Entered By</th><th>Status</th><th></th><th id="dash-action-th"></th></tr></thead>
+          <tbody id="dashboard-tbody"></tbody>
+        </table>
+      </div></div>
+    </div>
+
+    <!-- ADD IOU -->
+    <div class="page" id="page-add-iou">
+      <div class="section-header"><div class="section-title">Add New IOU</div></div>
+      <div class="add-form-card">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Person's Name</label>
+            <div class="name-input-wrap">
+              <input type="text" id="iou-person" placeholder="Type or pick a name…" autocomplete="off">
+              <div class="name-suggestions" id="name-suggestions"></div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Amount ($)</label>
+            <input type="number" id="iou-amount" placeholder="0.00" min="0.01" step="0.01">
+          </div>
+          <div class="form-group" style="flex:0">
+            <label>&nbsp;</label>
+            <button class="btn btn-gold" id="add-iou-btn" style="width:auto;padding:11px 22px">💾 Save IOU</button>
+          </div>
+        </div>
+      </div>
+      <div class="section-header"><div class="section-title">Today's Entries</div></div>
+      <div class="table-card"><div class="table-wrap">
+        <table>
+          <thead><tr><th>Name</th><th>Amount</th><th>Date</th><th>Time</th><th>Entered By</th><th>Status</th><th></th><th id="addiou-action-th"></th></tr></thead>
+          <tbody id="addiou-tbody"></tbody>
+        </table>
+      </div></div>
+    </div>
+
+    <!-- HISTORY -->
+    <div class="page" id="page-history">
+      <div class="section-header">
+        <div class="section-title">Full IOU History</div>
+        <div class="section-actions">
+          <button class="btn btn-ghost btn-sm" id="export-csv-btn">⬇ Export CSV</button>
+          <button class="btn btn-ghost btn-sm" id="import-trigger">⬆ Import JSON</button>
+          <input type="file" id="import-input" accept=".json" style="display:none">
+        </div>
+      </div>
+      <div class="table-card">
+        <div class="table-toolbar">
+          <input class="search-input" type="text" id="history-search" placeholder="🔍 Search by name…">
+          <input type="date" id="history-date" class="search-input" style="flex:0;min-width:140px">
+          <button class="btn btn-ghost btn-sm" id="clear-history">Clear</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Name</th><th>Amount</th><th>Date</th><th>Time</th><th>Entered By</th><th>Status</th><th></th><th id="history-action-th"></th></tr></thead>
+            <tbody id="history-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PEOPLE -->
+    <div class="page" id="page-people">
+      <div class="section-header">
+        <div class="section-title">People</div>
+        <button class="btn btn-gold btn-sm" id="add-person-btn">+ Add Person</button>
+      </div>
+      <div class="people-grid" id="people-grid"></div>
+    </div>
+
+    <!-- DAILY TOTALS -->
+    <div class="page" id="page-daily">
+      <div class="section-header"><div class="section-title">Daily IOU Summary</div></div>
+      <div id="daily-grid"></div>
+    </div>
+
+    <!-- USERS -->
+    <div class="page" id="page-users">
+      <div class="section-header">
+        <div class="section-title">User Management</div>
+        <button class="btn btn-gold btn-sm" id="add-user-btn">+ Add User</button>
+      </div>
+      <div class="users-table-card"><div class="table-wrap">
+        <table>
+          <thead><tr><th>Username</th><th>Role</th><th>Actions</th></tr></thead>
+          <tbody id="users-tbody"></tbody>
+        </table>
+      </div></div>
+    </div>
+
+    <!-- DATA / SYNC -->
+    <div class="page" id="page-sync">
+      <div class="section-header"><div class="section-title">Data & Backup</div></div>
+      <div style="display:grid;gap:16px;max-width:680px;">
+        <div class="add-form-card">
+          <div style="font-size:1rem;font-weight:600;color:var(--text);margin-bottom:4px;">💾 Local Storage Active</div>
+          <div style="font-size:.83rem;color:var(--text2);margin-bottom:16px;">Data is saved in this browser. Download a backup to keep it safe, or import a previous backup.</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="btn btn-gold" id="backup-btn">⬇ Download Backup</button>
+            <button class="btn btn-ghost" id="sync-csv-btn">⬇ Export CSV</button>
+            <button class="btn btn-ghost" id="sync-import-trigger">⬆ Import Backup</button>
+            <input type="file" id="sync-import-input" accept=".json" style="display:none">
+          </div>
+        </div>
+        <div style="background:rgba(201,168,76,.08);border:1px solid var(--gold-dim);border-radius:10px;padding:16px 18px;font-size:.82rem;color:var(--text2);line-height:1.7;">
+          <strong style="color:var(--gold)">🔥 Moving to Firebase?</strong><br>
+          Once you have your Firebase project set up, open <code style="color:var(--gold2)">index.html</code> in a text editor, find the <code style="color:var(--gold2)">FIREBASE CONFIG</code> comment near the bottom, and paste your config there. The app will automatically switch to Firestore.
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /.main -->
+</div><!-- /#app -->
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-title" id="modal-title"></div>
+    <div id="modal-body"></div>
+    <div class="modal-actions" id="modal-actions"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  STORAGE — localStorage now, drop-in Firebase replacement later
+//  To switch to Firebase: fill in FIREBASE_CONFIG below and set
+//  USE_FIREBASE = true
+// ═══════════════════════════════════════════════════════════════
+const USE_FIREBASE    = false;   // ← set true after pasting your config
+const FIREBASE_CONFIG = {
+  apiKey:            "YOUR_API_KEY",
+  authDomain:        "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId:         "YOUR_PROJECT_ID",
+  storageBucket:     "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId:             "YOUR_APP_ID"
+};
+
+// ── Core utils (defined first so everything below can use them) ──
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+// ── localStorage helpers ──
+const LS = {
+  get: k  => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch { return null; } },
+  set: (k,v) => localStorage.setItem(k, JSON.stringify(v))
+};
+
+let _cache = {
+  transactions: LS.get('iou_txns')    || [],
+  people:       LS.get('iou_people')  || [],
+  users:        LS.get('iou_users')   || []
+};
+
+// Ensure admin exists
+if (!_cache.users.find(u => u.username === 'admin')) {
+  _cache.users.push({ id: uid(), username: 'admin', password: 'admin123', role: 'admin' });
+  LS.set('iou_users', _cache.users);
+}
+// Migrate: ensure paid fields
+_cache.transactions = _cache.transactions.map(t =>
+  t.paid === undefined ? { ...t, paid: false, paidAt: null } : t
+);
+
+let _fbDb  = null;
+let _fbDoc = null;
+let _saveTimer = null;
+
+// ── Firebase lazy-init (only when USE_FIREBASE=true and config filled) ──
+async function initFirebase() {
+  if (!USE_FIREBASE) return false;
+  if (FIREBASE_CONFIG.apiKey === 'YOUR_API_KEY') {
+    toast('Firebase config not filled in — using local storage.', 'info');
+    return false;
+  }
+  try {
+    const { initializeApp }          = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
+    const { getFirestore, doc, getDoc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
+    const app = initializeApp(FIREBASE_CONFIG);
+    _fbDb  = getFirestore(app);
+    _fbDoc = doc(_fbDb, 'iou-tracker', 'data');
+    // load from Firestore
+    const snap = await getDoc(_fbDoc);
+    if (snap.exists()) {
+      const remote = snap.data();
+      _cache.transactions = (remote.transactions || []).map(t => t.paid===undefined?{...t,paid:false,paidAt:null}:t);
+      _cache.people = remote.people || [];
+      _cache.users  = remote.users  || [];
+      if (!_cache.users.find(u => u.username==='admin')) {
+        _cache.users.push({id:uid(),username:'admin',password:'admin123',role:'admin'});
+      }
+    }
+    // store setDoc for saves
+    window._fbSetDoc = setDoc;
+    return true;
+  } catch(e) {
+    console.error('Firebase init failed', e);
+    toast('Firebase failed — using local storage.', 'error');
+    return false;
+  }
+}
+
+function scheduleSave() {
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(async () => {
+    // Always save to localStorage
+    LS.set('iou_txns',    _cache.transactions);
+    LS.set('iou_people',  _cache.people);
+    LS.set('iou_users',   _cache.users);
+    // Also push to Firebase if active
+    if (_fbDoc && window._fbSetDoc) {
+      try { await window._fbSetDoc(_fbDoc, _cache); } catch(e) { console.error(e); }
+    }
+  }, 400);
+}
+
+// ── Data accessors ──
+function getUsers()    { return _cache.users        || []; }
+function getTxns()     { return _cache.transactions  || []; }
+function getPeople()   { return _cache.people        || []; }
+function saveUsers(u)  { _cache.users = u;            scheduleSave(); }
+function saveTxns(t)   { _cache.transactions = t;     scheduleSave(); }
+function savePeople(p) { _cache.people = p;            scheduleSave(); }
+
+// ── State ──
+let currentUser = null;
+let darkMode    = true;
+
+// ═══════════════════════════════════════════════════════════════
+//  BOOT
+// ═══════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', async () => {
+  await initFirebase();   // no-op if USE_FIREBASE=false
+
+  // Login
+  document.getElementById('login-btn').addEventListener('click', doLogin);
+  document.getElementById('login-pass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+
+  // Topbar
+  document.getElementById('logout-btn').addEventListener('click', doLogout);
+  document.getElementById('theme-btn').addEventListener('click', toggleTheme);
+
+  // Nav tabs
+  document.querySelectorAll('.nav-tab[data-tab]').forEach(t =>
+    t.addEventListener('click', () => showTab(t.dataset.tab)));
+
+  // Dashboard
+  document.getElementById('dash-add-btn').addEventListener('click', () => showTab('add-iou'));
+
+  // Add IOU
+  document.getElementById('add-iou-btn').addEventListener('click', addIOU);
+  document.getElementById('iou-amount').addEventListener('keydown', e => { if(e.key==='Enter') addIOU(); });
+
+  // Name autocomplete
+  const inp = document.getElementById('iou-person');
+  inp.addEventListener('input',  () => filterSuggestions(inp.value));
+  inp.addEventListener('focus',  () => filterSuggestions(inp.value));
+  inp.addEventListener('keydown', handleSugKey);
+  inp.addEventListener('blur',   () => setTimeout(hideSuggestions, 200));
+
+  // History
+  document.getElementById('history-search').addEventListener('input', renderHistory);
+  document.getElementById('history-date').addEventListener('change', renderHistory);
+  document.getElementById('clear-history').addEventListener('click', () => {
+    document.getElementById('history-search').value = '';
+    document.getElementById('history-date').value   = '';
+    renderHistory();
+  });
+  document.getElementById('export-csv-btn').addEventListener('click', exportCSV);
+  document.getElementById('import-trigger').addEventListener('click', () => document.getElementById('import-input').click());
+  document.getElementById('import-input').addEventListener('change', importData);
+
+  // People
+  document.getElementById('add-person-btn').addEventListener('click', openAddPersonModal);
+
+  // Users
+  document.getElementById('add-user-btn').addEventListener('click', () => openAddUserModal(null));
+
+  // Data/Sync page
+  document.getElementById('backup-btn').addEventListener('click', exportFullBackup);
+  document.getElementById('sync-csv-btn').addEventListener('click', exportCSV);
+  document.getElementById('sync-import-trigger').addEventListener('click', () => document.getElementById('sync-import-input').click());
+  document.getElementById('sync-import-input').addEventListener('change', importData);
+
+  // Modal backdrop close
+  document.getElementById('modal-overlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('modal-overlay')) closeModal();
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  AUTH
+// ═══════════════════════════════════════════════════════════════
+function doLogin() {
+  const u = document.getElementById('login-user').value.trim();
+  const p = document.getElementById('login-pass').value;
+  const found = getUsers().find(x => x.username === u && x.password === p);
+  if (!found) { document.getElementById('login-error').style.display = 'block'; return; }
+  currentUser = found;
+  document.getElementById('login-error').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display          = 'block';
+  document.getElementById('topbar-username').textContent = found.username;
+  document.getElementById('topbar-avatar').textContent   = found.username[0].toUpperCase();
+  if (found.role === 'admin') document.getElementById('tab-users').style.display = 'block';
+  showTab('dashboard');
+}
+
+function doLogout() {
+  currentUser = null;
+  document.getElementById('app').style.display          = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('tab-users').style.display    = 'none';
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  THEME / TABS
+// ═══════════════════════════════════════════════════════════════
+function toggleTheme() {
+  darkMode = !darkMode;
+  document.body.classList.toggle('light-mode', !darkMode);
+  document.getElementById('theme-btn').textContent = darkMode ? '☀︎' : '🌙';
+}
+
+const TABS = ['dashboard','add-iou','history','people','daily','users','sync'];
+function showTab(name) {
+  TABS.forEach(t => {
+    document.querySelector(`[data-tab="${t}"]`)?.classList.toggle('active', t === name);
+    document.getElementById('page-'+t)?.classList.toggle('active', t === name);
+  });
+  hideSuggestions();
+  const fns = {dashboard:renderDashboard,'add-iou':renderAddIOU,history:renderHistory,people:renderPeople,daily:renderDaily,users:renderUsers};
+  fns[name]?.();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  UTILS
+// ═══════════════════════════════════════════════════════════════
+const todayStr   = () => new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+const todayISO   = () => new Date().toISOString().slice(0,10);
+const timeStr    = () => new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true});
+const nowFullStr = () => new Date().toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true});
+const fmtMoney   = n  => '$' + parseFloat(n).toFixed(2);
+const escHtml    = s  => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const titleCase  = s  => s.trim().replace(/\b\w/g, c => c.toUpperCase());
+
+// ═══════════════════════════════════════════════════════════════
+//  NAME AUTOCOMPLETE
+// ═══════════════════════════════════════════════════════════════
+let _sugIdx = -1;
+
+function filterSuggestions(query) {
+  const box     = document.getElementById('name-suggestions');
+  const people  = getPeople();
+  const q       = query.trim().toLowerCase();
+  const matched = q ? people.filter(p => p.name.toLowerCase().includes(q)) : people.slice();
+  const exact   = people.find(p => p.name.toLowerCase() === q);
+
+  if (!q && !matched.length) { hideSuggestions(); return; }
+
+  let items = matched.map(p => ({ name: p.name, isNew: false }));
+  if (q && !exact) items.push({ name: titleCase(query), isNew: true });
+
+  if (!items.length) { hideSuggestions(); return; }
+
+  box.innerHTML = items.map((it, i) =>
+    `<div class="sug-item" data-i="${i}">
+       <span class="sug-name">${escHtml(it.name)}</span>
+       ${it.isNew ? '<span class="new-badge">+ New</span>' : ''}
+     </div>`).join('');
+  box.style.display = 'block';
+  _sugIdx = -1;
+
+  box.querySelectorAll('.sug-item').forEach((el, i) => {
+    el.addEventListener('mousedown', e => { e.preventDefault(); pickSuggestion(items[i]); });
+  });
+}
+
+function pickSuggestion(item) {
+  document.getElementById('iou-person').value = item.name;
+  hideSuggestions();
+  if (item.isNew) {
+    const people = getPeople();
+    if (!people.find(p => p.name.toLowerCase() === item.name.toLowerCase())) {
+      people.push({ id: uid(), name: item.name });
+      savePeople(people);
+    }
+  }
+  document.getElementById('iou-amount').focus();
+}
+
+function hideSuggestions() {
+  document.getElementById('name-suggestions').style.display = 'none';
+  _sugIdx = -1;
+}
+
+function handleSugKey(e) {
+  const box   = document.getElementById('name-suggestions');
+  const items = Array.from(box.querySelectorAll('.sug-item'));
+  if (!items.length || box.style.display === 'none') return;
+
+  if (e.key === 'ArrowDown')  { e.preventDefault(); _sugIdx = Math.min(_sugIdx+1, items.length-1); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); _sugIdx = Math.max(_sugIdx-1, 0); }
+  else if (e.key === 'Enter' && _sugIdx >= 0) { e.preventDefault(); items[_sugIdx].dispatchEvent(new MouseEvent('mousedown')); return; }
+  else if (e.key === 'Escape') { hideSuggestions(); return; }
+  else return;
+
+  items.forEach((el, i) => el.classList.toggle('hi', i === _sugIdx));
+  items[_sugIdx]?.scrollIntoView({ block: 'nearest' });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  IOU LOGIC
+// ═══════════════════════════════════════════════════════════════
+function addIOU() {
+  const raw = document.getElementById('iou-person').value.trim();
+  if (!raw) return toast('Enter a person\'s name.', 'error');
+  const person = titleCase(raw);
+  const amount = parseFloat(document.getElementById('iou-amount').value);
+  if (!amount || amount <= 0) return toast('Enter a valid amount.', 'error');
+
+  // Auto-save new person
+  const people = getPeople();
+  if (!people.find(p => p.name.toLowerCase() === person.toLowerCase())) {
+    people.push({ id: uid(), name: person });
+    savePeople(people);
+  }
+
+  const txns = getTxns();
+  txns.push({ id:uid(), person, amount, date:todayISO(), dateDisplay:todayStr(), time:timeStr(), enteredBy:currentUser.username, paid:false, paidAt:null });
+  saveTxns(txns);
+
+  document.getElementById('iou-person').value = '';
+  document.getElementById('iou-amount').value = '';
+  hideSuggestions();
+  document.getElementById('iou-person').focus();
+  toast(`${fmtMoney(amount)} saved for ${person} — Unpaid`, 'success');
+  renderAddIOU();
+  renderDashboard();
+}
+
+function deleteIOU(id) {
+  if (!confirm('Delete this IOU entry?')) return;
+  saveTxns(getTxns().filter(t => t.id !== id));
+  toast('Deleted.', 'info');
+  renderAll();
+}
+
+function editIOU(id) {
+  const t = getTxns().find(x => x.id === id);
+  if (!t) return;
+  openModal('Edit IOU', `
+    <div class="form-group"><label>Person</label><input type="text" id="edit-person" value="${escHtml(t.person)}"></div>
+    <div class="form-group"><label>Amount ($)</label><input type="number" id="edit-amount" value="${t.amount}" min="0.01" step="0.01"></div>
+  `, [
+    { label:'Cancel', cls:'btn-ghost', fn: closeModal },
+    { label:'Save',   cls:'btn-gold',  fn: () => {
+      const person = document.getElementById('edit-person').value.trim();
+      const amount = parseFloat(document.getElementById('edit-amount').value);
+      if (!person || !amount || amount <= 0) return toast('Invalid data.','error');
+      const txns = getTxns(), idx = txns.findIndex(x => x.id===id);
+      txns[idx].person = person; txns[idx].amount = amount;
+      saveTxns(txns); closeModal(); toast('Updated.','success'); renderAll();
+    }},
+  ]);
+}
+
+function togglePaid(id) {
+  const txns = getTxns(), idx = txns.findIndex(x => x.id===id);
+  if (idx < 0) return;
+  txns[idx].paid   = !txns[idx].paid;
+  txns[idx].paidAt = txns[idx].paid ? nowFullStr() : null;
+  saveTxns(txns);
+  toast(txns[idx].paid ? `${txns[idx].person} marked Paid ✓` : `${txns[idx].person} marked Unpaid`, txns[idx].paid ? 'success' : 'info');
+  renderAll();
+}
+
+function toggleDayPaid(date, markPaid) {
+  const txns = getTxns(), stamp = markPaid ? nowFullStr() : null;
+  txns.forEach((t,i) => { if (t.date===date) { txns[i].paid=markPaid; txns[i].paidAt=stamp; } });
+  saveTxns(txns);
+  toast(markPaid ? 'All marked Paid ✓' : 'All marked Unpaid', markPaid ? 'success' : 'info');
+  renderAll();
+}
+
+function toggleDayGroup(date) {
+  document.getElementById('dg-'+date)?.classList.toggle('collapsed');
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  PEOPLE
+// ═══════════════════════════════════════════════════════════════
+function openAddPersonModal() {
+  openModal('Add Person', `<div class="form-group"><label>Full Name</label><input type="text" id="new-person-name" placeholder="Enter name…"></div>`, [
+    { label:'Cancel', cls:'btn-ghost', fn: closeModal },
+    { label:'Add',    cls:'btn-gold',  fn: () => {
+      const name = document.getElementById('new-person-name').value.trim();
+      if (!name) return toast('Enter a name.','error');
+      const people = getPeople();
+      if (people.find(p => p.name.toLowerCase()===name.toLowerCase())) return toast('Already exists.','error');
+      people.push({id:uid(),name}); savePeople(people);
+      closeModal(); toast(`${name} added.`,'success'); renderPeople();
+    }},
+  ]);
+}
+
+function deletePerson(id) {
+  const p = getPeople().find(x => x.id===id);
+  if (!confirm(`Delete ${p?.name}?`)) return;
+  savePeople(getPeople().filter(x => x.id!==id));
+  toast('Removed.','info'); renderPeople();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  USERS
+// ═══════════════════════════════════════════════════════════════
+function openAddUserModal(editId) {
+  const ex = editId ? getUsers().find(u => u.id===editId) : null;
+  openModal(ex?'Edit User':'Add User', `
+    <div class="form-group"><label>Username</label><input type="text" id="mu-name" value="${ex?escHtml(ex.username):''}"></div>
+    <div class="form-group"><label>Password</label><input type="password" id="mu-pass" placeholder="${ex?'Leave blank to keep':'Set password'}"></div>
+    <div class="form-group"><label>Role</label>
+      <select id="mu-role">
+        <option value="user"  ${(!ex||ex.role==='user')?'selected':''}>User</option>
+        <option value="admin" ${ex?.role==='admin'?'selected':''}>Admin</option>
+      </select></div>`, [
+    { label:'Cancel', cls:'btn-ghost', fn: closeModal },
+    { label:ex?'Save':'Create', cls:'btn-gold', fn: () => {
+      const uname=document.getElementById('mu-name').value.trim();
+      const upass=document.getElementById('mu-pass').value;
+      const urole=document.getElementById('mu-role').value;
+      if (!uname) return toast('Enter a username.','error');
+      const users=getUsers();
+      if (editId) {
+        const idx=users.findIndex(u=>u.id===editId);
+        users[idx].username=uname; users[idx].role=urole;
+        if (upass) users[idx].password=upass;
+      } else {
+        if (!upass) return toast('Set a password.','error');
+        if (users.find(u=>u.username===uname)) return toast('Username taken.','error');
+        users.push({id:uid(),username:uname,password:upass,role:urole});
+      }
+      saveUsers(users); closeModal(); toast('User saved.','success'); renderUsers();
+    }},
+  ]);
+}
+
+function deleteUser(id) {
+  const u = getUsers().find(x=>x.id===id);
+  if (u?.username==='admin') return toast('Cannot delete admin.','error');
+  if (!confirm(`Delete "${u?.username}"?`)) return;
+  saveUsers(getUsers().filter(x=>x.id!==id)); toast('Deleted.','info'); renderUsers();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  RENDER
+// ═══════════════════════════════════════════════════════════════
+function renderAll() { renderDashboard(); renderAddIOU(); renderHistory(); renderPeople(); renderDaily(); }
+
+function paidCell(t) {
+  const badge = t.paid
+    ? `<span class="badge-paid">✓ Paid</span>${t.paidAt?`<div class="paid-timestamp">${escHtml(t.paidAt)}</div>`:''}`
+    : `<span class="badge-unpaid">⏳ Unpaid</span>`;
+  const btn = t.paid
+    ? `<button class="paid-toggle-btn toggle-paid" data-tid="${t.id}" title="Mark as Unpaid">&#x2713; Paid &#x2191;</button>`
+    : `<button class="paid-toggle-btn toggle-unpaid" data-tid="${t.id}" title="Mark as Paid">&#x2715; Unpaid &#x2193;</button>`;
+  return `<td>${badge}</td><td>${btn}</td>`;
+}
+
+function actionBtns(id) {
+  if (currentUser?.role !== 'admin') return '<td></td>';
+  return `<td class="actions-cell">
+    <button class="btn btn-ghost btn-sm" data-eid="${id}">✏️</button>
+    <button class="btn btn-red btn-sm" data-did="${id}">🗑</button>
+  </td>`;
+}
+
+function bindRows(container) {
+  container.querySelectorAll('[data-tid]').forEach(b => b.addEventListener('click', () => togglePaid(b.dataset.tid)));
+  container.querySelectorAll('[data-eid]').forEach(b => b.addEventListener('click', () => editIOU(b.dataset.eid)));
+  container.querySelectorAll('[data-did]').forEach(b => b.addEventListener('click', () => deleteIOU(b.dataset.did)));
+}
+
+function rowHtml(t) {
+  return `<tr style="${t.paid?'opacity:.6':''}">
+    <td class="name-cell">${escHtml(t.person)}</td>
+    <td class="amount-cell">${fmtMoney(t.amount)}</td>`;
+}
+
+function renderDashboard() {
+  const txns      = getTxns(), today = todayISO();
+  const todayTxns = txns.filter(t=>t.date===today);
+  const totDay    = todayTxns.reduce((s,t)=>s+t.amount,0);
+  const totPaid   = todayTxns.filter(t=>t.paid).reduce((s,t)=>s+t.amount,0);
+  const isAdmin   = currentUser?.role==='admin';
+
+  document.getElementById('stat-today').textContent         = fmtMoney(totDay);
+  document.getElementById('stat-today-date').textContent    = todayStr();
+  document.getElementById('stat-paid-today').textContent    = fmtMoney(totPaid);
+  document.getElementById('stat-unpaid-today').textContent  = fmtMoney(totDay-totPaid);
+  document.getElementById('stat-entries-today').textContent = todayTxns.length;
+  document.getElementById('stat-people').textContent        = getPeople().length;
+  document.getElementById('stat-alltime').textContent       = fmtMoney(txns.reduce((s,t)=>s+t.amount,0));
+  document.getElementById('dash-action-th').textContent     = isAdmin?'Actions':'';
+
+  const tbody = document.getElementById('dashboard-tbody');
+  if (!todayTxns.length) { tbody.innerHTML=`<tr><td colspan="7" class="empty-state"><div class="icon">📭</div>No IOUs tonight yet.</td></tr>`; return; }
+  tbody.innerHTML = [...todayTxns].reverse().map(t =>
+    `${rowHtml(t)}<td>${escHtml(t.time)}</td><td>${escHtml(t.enteredBy)}</td>${paidCell(t)}${actionBtns(t.id)}</tr>`
+  ).join('');
+  bindRows(tbody);
+}
+
+function renderAddIOU() {
+  const txns    = getTxns().filter(t=>t.date===todayISO());
+  const isAdmin = currentUser?.role==='admin';
+  document.getElementById('addiou-action-th').textContent = isAdmin?'Actions':'';
+  const tbody = document.getElementById('addiou-tbody');
+  if (!txns.length) { tbody.innerHTML=`<tr><td colspan="8" class="empty-state"><div class="icon">📝</div>No entries today yet.</td></tr>`; return; }
+  tbody.innerHTML = [...txns].reverse().map(t =>
+    `${rowHtml(t)}<td>${escHtml(t.dateDisplay)}</td><td>${escHtml(t.time)}</td><td>${escHtml(t.enteredBy)}</td>${paidCell(t)}${actionBtns(t.id)}</tr>`
+  ).join('');
+  bindRows(tbody);
+}
+
+function renderHistory() {
+  const search  = document.getElementById('history-search')?.value.toLowerCase()||'';
+  const df      = document.getElementById('history-date')?.value||'';
+  const isAdmin = currentUser?.role==='admin';
+  document.getElementById('history-action-th').textContent = isAdmin?'Actions':'';
+  let txns = getTxns();
+  if (search) txns=txns.filter(t=>t.person.toLowerCase().includes(search));
+  if (df)     txns=txns.filter(t=>t.date===df);
+  const tbody = document.getElementById('history-tbody');
+  if (!txns.length) { tbody.innerHTML=`<tr><td colspan="8" class="empty-state"><div class="icon">🔍</div>No entries found.</td></tr>`; return; }
+  tbody.innerHTML = [...txns].reverse().map(t =>
+    `${rowHtml(t)}<td>${escHtml(t.dateDisplay)}</td><td>${escHtml(t.time)}</td><td>${escHtml(t.enteredBy)}</td>${paidCell(t)}${actionBtns(t.id)}</tr>`
+  ).join('');
+  bindRows(tbody);
+}
+
+function renderPeople() {
+  const people=getPeople(), txns=getTxns(), isAdmin=currentUser?.role==='admin';
+  const grid=document.getElementById('people-grid');
+  if (!people.length) { grid.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div class="icon">👥</div>No people added yet.</div>`; return; }
+  grid.innerHTML = people.map(p => {
+    const total=txns.filter(t=>t.person===p.name).reduce((s,t)=>s+t.amount,0);
+    return `<div class="person-card"><div><div class="person-name">${escHtml(p.name)}</div><div class="person-total">${fmtMoney(total)} total</div></div>${isAdmin?`<button class="btn btn-red btn-sm" data-dp="${p.id}">🗑</button>`:''}</div>`;
+  }).join('');
+  grid.querySelectorAll('[data-dp]').forEach(b=>b.addEventListener('click',()=>deletePerson(b.dataset.dp)));
+}
+
+function renderDaily() {
+  const txns=getTxns(), byDate={};
+  txns.forEach(t=>{
+    if (!byDate[t.date]) byDate[t.date]={display:t.dateDisplay,txns:[]};
+    byDate[t.date].txns.push(t);
+  });
+  const dates=Object.keys(byDate).sort((a,b)=>b.localeCompare(a));
+  const grid=document.getElementById('daily-grid');
+  if (!dates.length) { grid.innerHTML=`<div class="empty-state"><div class="icon">📅</div>No data yet.</div>`; return; }
+  const isAdmin=currentUser?.role==='admin';
+
+  grid.innerHTML = dates.map(date=>{
+    const {display,txns:dt}=byDate[date];
+    const total=dt.reduce((s,t)=>s+t.amount,0);
+    const paidAmt=dt.filter(t=>t.paid).reduce((s,t)=>s+t.amount,0);
+    const allPaid=dt.every(t=>t.paid);
+
+    const rows=[...dt].reverse().map(t=>
+      `${rowHtml(t)}<td>${escHtml(t.time)}</td><td>${escHtml(t.enteredBy)}</td>${paidCell(t)}${actionBtns(t.id)}</tr>`
+    ).join('');
+
+    const dayBtn=allPaid
+      ?`<button class="day-toggle-btn day-toggle-unpaid" data-day="${date}" data-mp="0">🔓 Mark All Unpaid</button>`
+      :`<button class="day-toggle-btn day-toggle-paid"   data-day="${date}" data-mp="1">✓ Mark All Paid</button>`;
+
+    return `
+    <div class="day-group" id="dg-${date}">
+      <div class="day-group-header" data-col="${date}">
+        <div>
+          <div class="day-group-date">${escHtml(display)}</div>
+          <div style="font-size:.78rem;color:var(--text3);margin-top:2px;">
+            ${dt.length} entr${dt.length===1?'y':'ies'} &nbsp;·&nbsp;
+            <span style="color:var(--green)">Paid ${fmtMoney(paidAmt)}</span> &nbsp;·&nbsp;
+            <span style="color:var(--red)">Unpaid ${fmtMoney(total-paidAmt)}</span>
+          </div>
+        </div>
+        <div class="day-group-meta">
+          <div class="day-group-total">${fmtMoney(total)}</div>
+          <div class="day-group-status-row">${dayBtn}<span class="collapse-icon">▼</span></div>
+        </div>
+      </div>
+      <div class="day-group-body"><div class="table-wrap">
+        <table>
+          <thead><tr><th>Name</th><th>Amount</th><th>Time</th><th>Entered By</th><th>Status</th><th></th>${isAdmin?'<th>Actions</th>':''}</tr></thead>
+          <tbody id="dg-tb-${date}">${rows}</tbody>
+        </table>
+      </div></div>
+    </div>`;
+  }).join('');
+
+  grid.querySelectorAll('[data-col]').forEach(hdr=>
+    hdr.addEventListener('click',e=>{ if(!e.target.closest('[data-day]')) toggleDayGroup(hdr.dataset.col); }));
+  grid.querySelectorAll('[data-day]').forEach(btn=>
+    btn.addEventListener('click',e=>{ e.stopPropagation(); toggleDayPaid(btn.dataset.day,btn.dataset.mp==='1'); }));
+  dates.forEach(date=>{ const tb=document.getElementById('dg-tb-'+date); if(tb) bindRows(tb); });
+}
+
+function renderUsers() {
+  const tbody=document.getElementById('users-tbody');
+  tbody.innerHTML=getUsers().map(u=>`
+    <tr>
+      <td class="name-cell">${escHtml(u.username)}</td>
+      <td><span class="badge badge-${u.role}">${u.role}</span></td>
+      <td class="actions-cell">
+        <button class="btn btn-ghost btn-sm" data-eu="${u.id}">✏️ Edit</button>
+        ${u.username!=='admin'?`<button class="btn btn-red btn-sm" data-du="${u.id}">🗑</button>`:''}
+      </td>
+    </tr>`).join('');
+  tbody.querySelectorAll('[data-eu]').forEach(b=>b.addEventListener('click',()=>openAddUserModal(b.dataset.eu)));
+  tbody.querySelectorAll('[data-du]').forEach(b=>b.addEventListener('click',()=>deleteUser(b.dataset.du)));
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  MODAL
+// ═══════════════════════════════════════════════════════════════
+function openModal(title, body, actions) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML    = body;
+  const div=document.getElementById('modal-actions');
+  div.innerHTML='';
+  actions.forEach(a=>{
+    const btn=document.createElement('button');
+    btn.className=`btn ${a.cls}`; btn.textContent=a.label;
+    btn.addEventListener('click',a.fn); div.appendChild(btn);
+  });
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+
+// ═══════════════════════════════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════════════════════════════
+function toast(msg, type='info') {
+  const el=document.createElement('div');
+  el.className=`toast ${type}`; el.textContent=msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(()=>el.remove(),3200);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  EXPORT / IMPORT
+// ═══════════════════════════════════════════════════════════════
+function exportFullBackup() {
+  const a=Object.assign(document.createElement('a'),{
+    href:'data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify({transactions:getTxns(),people:getPeople(),users:getUsers(),exportedAt:new Date().toISOString()},null,2)),
+    download:`iou-backup-${todayISO()}.json`
+  });
+  a.click(); toast('Backup downloaded.','success');
+}
+
+function exportCSV() {
+  const txns=getTxns();
+  if (!txns.length) return toast('No data to export.','info');
+  const rows=[['Name','Amount','Date','Time','Entered By','Paid','Paid At']];
+  txns.forEach(t=>rows.push([t.person,t.amount,t.dateDisplay,t.time,t.enteredBy,t.paid?'Yes':'No',t.paidAt||'']));
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=Object.assign(document.createElement('a'),{href:'data:text/csv;charset=utf-8,'+encodeURIComponent(csv),download:`iou-export-${todayISO()}.csv`});
+  a.click(); toast('CSV exported.','success');
+}
+
+function importData(e) {
+  const file=e.target.files[0]; if (!file) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try {
+      const data=JSON.parse(ev.target.result);
+      if (data.transactions) saveTxns(data.transactions.map(t=>t.paid===undefined?{...t,paid:false,paidAt:null}:t));
+      if (data.people) savePeople(data.people);
+      toast('Data imported.','success'); renderAll();
+    } catch { toast('Invalid backup file.','error'); }
+  };
+  reader.readAsText(file); e.target.value='';
+}
+</script>
+</body>
+</html>
